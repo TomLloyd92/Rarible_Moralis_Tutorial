@@ -14,7 +14,6 @@ init = async () => {
     window.tokenContract = new web3.eth.Contract(tokenAbi, TOKEN_CONTRACT_ADDRESS);
 
     initUser();
-    loadUserItems();
 }
 
 initUser = async () =>{
@@ -23,6 +22,7 @@ initUser = async () =>{
         showElement(userProfileButton);
         showElement(openCreateItemButton);
         showElement(openUserItemsButton);
+        loadUserItems();
     }else{
         showElement(userConnectButton);
         hideElement(userProfileButton);
@@ -173,9 +173,41 @@ openUserItems = async () => {
 
 loadUserItems = async () => {
     const ownedItems = await Moralis.Cloud.run("getUserItems");
+
     console.log(ownedItems);
+    ownedItems.forEach(item => {
+        getAndRenderItemData(item, renderUserItem);
+    })
 }
 
+
+initTemplate = (id) =>{
+    const template = document.getElementById(id);
+    template.id = "";
+    template.parentNode.removeChild(template);
+    return template;
+}
+
+renderUserItem = (item) => {
+    const userItem = userItemTemplate.cloneNode(true);
+    userItem.getElementsByTagName("img")[0].src = item.image;
+    userItem.getElementsByTagName("img")[0].alt = item.name;
+    userItem.getElementsByTagName("h5")[0].innerText = item.image;
+    userItem.getElementsByTagName("p")[0].innerText = item.description;
+    userItems.appendChild(userItem);
+}
+
+//Getting the item and its data and passing it to render
+getAndRenderItemData = (item, renderFunction) =>{
+    fetch(item.tokenuri)
+    .then(response => response.json())
+    .then(data => {
+        data.symbol = item.symbol;
+        data.tokenId = item.tokenId;
+        data.tokenAddress = item.tokenAddress;
+        renderFunction(data);
+    })
+}
 
 hideElement = (element) => element.style.display = "none";
 showElement = (element) => element.style.display = "block"
@@ -228,5 +260,8 @@ document.getElementById("btnCloseUserItems").onclick = () => hideElement(userIte
 
 const openUserItemsButton = document.getElementById("btnMyItems");
 openUserItemsButton.onclick = openUserItems;
+
+const userItemTemplate = initTemplate("itemTemplate");
+
 
 init();

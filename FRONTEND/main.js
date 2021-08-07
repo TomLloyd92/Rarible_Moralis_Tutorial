@@ -1,6 +1,9 @@
-Moralis.initialize("bRNMZ4T0gK5bw6wIalzzZOu83md5eRQx35nRy3eq");
+Moralis.initialize("rajsAM0TvIDfGFLxUJp2GO8OOMRYe3Hg6FMuh2in");
 
-Moralis.serverURL = 'https://13yev3ofmjtr.usemoralis.com:2053/server'
+Moralis.serverURL = 'https://jzcrkwr0n2id.moralisweb3.com:2053/server'
+
+
+
 
 const TOKEN_CONTRACT_ADDRESS = "0xCC46F5c86B9B14A5Ef82eE0B181651ECee6dD4e6"
 
@@ -8,6 +11,10 @@ init = async () => {
     hideElement(userInfo);
     hideElement(createItemForm);
     window.web3 = await Moralis.Web3.enable();
+
+    //Token Contract Access 
+    window.tokenContract = new web3.eth.Contract(tokenAbi, TOKEN_CONTRACT_ADDRESS);
+
     initUser();
 }
 
@@ -114,14 +121,15 @@ createItem = async () => {
     const metadata = {
         name: createItemName.value,
         description: createItemDescription.value,
-        nftFilePath: nftFilePath,
-        nftFileHash: nftFileHash,
+        image: nftFilePath
     };
     const nftFileMetadataFile = new Moralis.File("metadata.json", {base64: btoa(JSON.stringify(metadata))});
     await nftFileMetadataFile.saveIPFS();
     const nftFileMetadataFilePath = nftFile.ipfs();
     const nftFileMetadataFileHash = nftFile.hash();
 
+    //Mints NFT with passed URI
+    const nftId = await mintNFT(nftFileMetadataFilePath);
 
     console.log(createItemName.value);
     console.log(createItemDescription.value);
@@ -136,8 +144,18 @@ createItem = async () => {
     item.set('nftFileHash', nftFileHash);
     item.set('metadataFilePath', nftFileMetadataFilePath);
     item.set('metadataFileHash', nftFileMetadataFileHash);
+    item.set('nftId', nftId);
+    item.set('nftContractAddress', TOKEN_CONTRACT_ADDRESS )
     await item.save();
     console.log(item);
+}
+
+
+mintNFT = async(metadataUrl) => {
+    const receipt = await tokenContract.methods.createItem(metadataUrl).send({from: ethereum.selectedAddress});
+    console.log(receipt);
+    //From events triggered from safemint
+    return receipt.events.Transfer.returnValues.tokenId;
 }
 
 hideElement = (element) => element.style.display = "none";

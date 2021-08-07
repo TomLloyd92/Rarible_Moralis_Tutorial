@@ -2,12 +2,10 @@ Moralis.initialize("rajsAM0TvIDfGFLxUJp2GO8OOMRYe3Hg6FMuh2in");
 
 Moralis.serverURL = 'https://jzcrkwr0n2id.moralisweb3.com:2053/server'
 
-
-
-
 const TOKEN_CONTRACT_ADDRESS = "0xCC46F5c86B9B14A5Ef82eE0B181651ECee6dD4e6"
 
 init = async () => {
+    hideElement(userItemsSection)
     hideElement(userInfo);
     hideElement(createItemForm);
     window.web3 = await Moralis.Web3.enable();
@@ -16,6 +14,7 @@ init = async () => {
     window.tokenContract = new web3.eth.Contract(tokenAbi, TOKEN_CONTRACT_ADDRESS);
 
     initUser();
+    loadUserItems();
 }
 
 initUser = async () =>{
@@ -23,10 +22,12 @@ initUser = async () =>{
         hideElement(userConnectButton);
         showElement(userProfileButton);
         showElement(openCreateItemButton);
+        showElement(openUserItemsButton);
     }else{
         showElement(userConnectButton);
         hideElement(userProfileButton);
         hideElement(openCreateItemButton);
+        hideElement(openUserItemsButton);
     }
 }
 
@@ -81,6 +82,9 @@ openUserInfo = async () => {
     }
 }
 
+
+
+
 //Store all user settings
 saveUserInfo = async () =>
 {
@@ -125,8 +129,8 @@ createItem = async () => {
     };
     const nftFileMetadataFile = new Moralis.File("metadata.json", {base64: btoa(JSON.stringify(metadata))});
     await nftFileMetadataFile.saveIPFS();
-    const nftFileMetadataFilePath = nftFile.ipfs();
-    const nftFileMetadataFileHash = nftFile.hash();
+    const nftFileMetadataFilePath = nftFileMetadataFile.ipfs();
+    const nftFileMetadataFileHash = nftFileMetadataFile.hash();
 
     //Mints NFT with passed URI
     const nftId = await mintNFT(nftFileMetadataFilePath);
@@ -157,6 +161,21 @@ mintNFT = async(metadataUrl) => {
     //From events triggered from safemint
     return receipt.events.Transfer.returnValues.tokenId;
 }
+
+openUserItems = async () => {
+    user = await Moralis.User.current();
+    if(user){
+        showElement(userItemsSection);
+    }else{
+        login();
+    }
+}
+
+loadUserItems = async () => {
+    const ownedItems = await Moralis.Cloud.run("getUserItems");
+    console.log(ownedItems);
+}
+
 
 hideElement = (element) => element.style.display = "none";
 showElement = (element) => element.style.display = "block"
@@ -200,5 +219,14 @@ const createItemFile = document.getElementById("fileCreateItemFile");
 
 document.getElementById("btnCreateItem").onclick = createItem;
 
+
+
+//User Items
+const userItemsSection = document.getElementById("userItems");
+const userItems = document.getElementById("userItemsList");
+document.getElementById("btnCloseUserItems").onclick = () => hideElement(userItemsSection);
+
+const openUserItemsButton = document.getElementById("btnMyItems");
+openUserItemsButton.onclick = openUserItems;
 
 init();
